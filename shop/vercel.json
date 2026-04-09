@@ -1,0 +1,20 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "next build",
+  "devCommand": "next dev",
+  "installCommand": "npm install",
+  "env": {
+    "PAYCARD_API_KEY": "@paycard-api-key"
+  },
+  "headers": [
+    {
+      "source": "/api/webhooks/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    }
+  ]
+}
