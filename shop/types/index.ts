@@ -74,3 +74,35 @@ export interface PaycardWebhookPayload {
   operation_reference?: string;
   "paycard-operation-reference"?: string;
 }
+
+// LengoPay create_payment response
+export interface LengoPayCreateResponse {
+  status: string;
+  pay_id: string;
+  payment_url: string;
+}
+
+// LengoPay verify_payment response — GET /api/v1/payments/{payId}
+// status is UPPERCASE strict: "SUCCESS" | "FAILED" | "PENDING" | "CANCELLED"
+export interface LengoPayVerifyResponse {
+  pay_id: string;
+  status: "SUCCESS" | "FAILED" | "PENDING" | "CANCELLED";
+  amount: number;
+  currency: string;
+  message: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface LengoPayError {
+  message: string;
+}
+
+// Webhook payload — LengoPay POSTs this to callback_url
+export interface LengoPayWebhookPayload {
+  pay_id: string;
+  status: "SUCCESS" | "FAILED";
+  amount: number;
+  message: string;
+  Client?: string; // phone number of payer — may be absent
+  metadata?: Record<string, unknown>;
+}

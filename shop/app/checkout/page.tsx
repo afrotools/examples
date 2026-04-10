@@ -17,11 +17,13 @@ import { formatGNF } from "@/lib/utils";
 import { Loader2, ShieldCheck } from "lucide-react";
 import type { CheckoutFormData } from "@/types";
 
+type PaymentProvider = "paycard" | "lengopay";
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, totalPrice, clearCart, hydrated } = useCart();
   const [form, setForm] = useState<CheckoutFormData>({ name: "", email: "" });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<PaymentProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Redirect after hydration if cart is empty (must be in useEffect, not render)
@@ -33,13 +35,15 @@ export default function CheckoutPage() {
 
   if (!hydrated || (hydrated && items.length === 0)) return null;
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
+  async function handlePayment(provider: PaymentProvider) {
+    setLoading(provider);
     setError(null);
 
+    const endpoint =
+      provider === "lengopay" ? "/api/checkout/lengopay" : "/api/checkout";
+
     try {
-      const res = await fetch("/api/checkout", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items, customer: form }),
@@ -54,18 +58,29 @@ export default function CheckoutPage() {
         );
       }
 
-      // Clear cart before leaving — user is going to Paycard
       clearCart();
 
-      // Hard redirect to Paycard hosted payment page
-      window.location.href = (data as { paymentUrl: string }).paymentUrl;
+      if (provider === "lengopay") {
+        // Store pay_id in sessionStorage before redirect — the success page
+        // reads it to call verify_payment server-side after LengoPay returns.
+        const { paymentUrl, payId } = data as {
+          paymentUrl: string;
+          payId: string;
+        };
+        sessionStorage.setItem("lengopay_pay_id", payId);
+        window.location.href = paymentUrl;
+      } else {
+        window.location.href = (data as { paymentUrl: string }).paymentUrl;
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Une erreur est survenue."
       );
-      setLoading(false);
+      setLoading(null);
     }
   }
+
+  const isLoading = loading !== null;
 
   return (
     <div className="container mx-auto px-4 py-10 max-w-2xl">
@@ -74,7 +89,7 @@ export default function CheckoutPage() {
           Finaliser la commande
         </h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Vous serez redirigé vers Paycard pour le paiement sécurisé.
+          Choisissez votre moyen de paiement pour continuer.
         </p>
       </div>
 
@@ -85,7 +100,10 @@ export default function CheckoutPage() {
             <CardTitle className="text-base">Vos informations</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form
+              onSubmit={(e) => e.preventDefault()}
+              className="space-y-4"
+            >
               <div className="space-y-2">
                 <Label htmlFor="name">Nom complet</Label>
                 <Input
@@ -97,7 +115,7 @@ export default function CheckoutPage() {
                     setForm((f) => ({ ...f, name: e.target.value }))
                   }
                   placeholder="Mamadou Diallo"
-                  disabled={loading}
+                  disabled={isLoading}
                 />
               </div>
 
@@ -112,7 +130,7 @@ export default function CheckoutPage() {
                     setForm((f) => ({ ...f, email: e.target.value }))
                   }
                   placeholder="mamadou@email.com"
-                  disabled={loading}
+                  disabled={isLoading}
                 />
               </div>
 
@@ -122,19 +140,46 @@ export default function CheckoutPage() {
                 </p>
               )}
 
-              <Button type="submit" className="w-full gap-2" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Redirection vers Paycard…
-                  </>
-                ) : (
-                  <>
-                    <ShieldCheck className="h-4 w-4" />
-                    Payer avec Paycard
-                  </>
-                )}
-              </Button>
+              <div className="flex flex-col gap-2 pt-1">
+                <Button
+                  type="button"
+                  className="w-full gap-2"
+                  disabled={isLoading || !form.name.trim() || !form.email.trim()}
+                  onClick={() => handlePayment("paycard")}
+                >
+                  {loading === "paycard" ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Redirection vers Paycard…
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="h-4 w-4" />
+                      Payer avec Paycard
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full gap-2"
+                  disabled={isLoading || !form.name.trim() || !form.email.trim()}
+                  onClick={() => handlePayment("lengopay")}
+                >
+                  {loading === "lengopay" ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Redirection vers LengoPay…
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="h-4 w-4" />
+                      Payer avec LengoPay
+                    </>
+                  )}
+                </Button>
+              </div>
 
               <p className="text-xs text-center text-muted-foreground">
                 Paiement sécurisé — Orange Money, MTN MoMo, carte bancaire

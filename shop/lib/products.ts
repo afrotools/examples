@@ -31,7 +31,7 @@ export const PRODUCTS: Product[] = [
       "Traditional tea ceremony set from the Fouta Djallon highlands. Hand-painted wooden tray, 3 decorative glasses, and a brass teapot.",
     descriptionFr:
       "Service à thé traditionnel des hauts plateaux du Fouta Djallon. Plateau en bois peint à la main, 3 verres décoratifs et une théière en laiton.",
-    price: 65_000,
+    price: 1_000,
     category: "Art de Vivre",
   },
 ];
