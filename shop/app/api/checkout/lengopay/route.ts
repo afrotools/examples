@@ -45,7 +45,6 @@ export async function POST(request: NextRequest) {
 
     const payment = await createPayment({
       amount: Math.round(totalAmount),
-      currency: "GNF",
       // return_url is set without pay_id — client stores pay_id in sessionStorage
       // before redirecting so the success page can verify server-side.
       returnUrl: `${baseUrl}/payment/lengopay`,

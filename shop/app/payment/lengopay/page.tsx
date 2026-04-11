@@ -17,8 +17,6 @@ interface VerifyResult {
   paid: boolean;
   status?: string;
   amount?: number;
-  currency?: string;
-  message?: string;
   error?: string;
 }
 
@@ -76,9 +74,7 @@ export default function LengoPayResultPage() {
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Montant</dt>
                   <dd className="font-semibold">
-                    {result.currency === "GNF"
-                      ? formatGNF(result.amount)
-                      : `${result.amount} ${result.currency}`}
+                    {formatGNF(result.amount)}
                   </dd>
                 </div>
               )}

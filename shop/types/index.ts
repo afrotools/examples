@@ -82,15 +82,13 @@ export interface LengoPayCreateResponse {
   payment_url: string;
 }
 
-// LengoPay verify_payment response — GET /api/v1/payments/{payId}
-// status is UPPERCASE strict: "SUCCESS" | "FAILED" | "PENDING" | "CANCELLED"
+// LengoPay verify_payment response — POST /api/v1/transaction/status (v1.2.0+)
+// status is UPPERCASE strict: "SUCCESS" | "FAILED" | "PENDING"
 export interface LengoPayVerifyResponse {
   pay_id: string;
-  status: "SUCCESS" | "FAILED" | "PENDING" | "CANCELLED";
+  status: "SUCCESS" | "FAILED" | "PENDING";
   amount: number;
-  currency: string;
-  message: string;
-  metadata?: Record<string, unknown>;
+  date: string;
 }
 
 export interface LengoPayError {

@@ -3,7 +3,7 @@
  * Spec: afrotools/afrotools/specs/payment/lengopay/ (status: verified)
  *
  * create_payment  → POST /api/v1/payments
- * verify_payment  → GET  /api/v1/payments/{payId}
+ * verify_payment  → POST /api/v1/transaction/status   (v1.2.0+)
  *
  * Critical:
  * - No sandbox. Every request hits production.
@@ -33,7 +33,6 @@ function getWebsiteId(): string {
 
 interface CreatePaymentInput {
   amount: number;
-  currency?: string;
   returnUrl?: string;
   callbackUrl?: string;
   metadata?: Record<string, unknown>;
@@ -45,7 +44,6 @@ export async function createPayment(
   const body: Record<string, unknown> = {
     websiteid: getWebsiteId(),
     amount: input.amount,
-    currency: input.currency ?? "GNF",
   };
 
   if (input.returnUrl) body["return_url"] = input.returnUrl;
@@ -93,13 +91,15 @@ export async function verifyPayment(
   payId: string
 ): Promise<LengoPayVerifyResponse> {
   const response = await fetch(
-    `https://portal.lengopay.com/api/v1/payments/${payId}`,
+    "https://portal.lengopay.com/api/v1/transaction/status",
     {
-      method: "GET",
+      method: "POST",
       headers: {
         Authorization: `Basic ${getLicenseKey()}`,
         Accept: "application/json",
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({ pay_id: payId, websiteid: getWebsiteId() }),
       cache: "no-store",
     }
   );

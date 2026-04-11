@@ -18,8 +18,6 @@ export async function GET(request: NextRequest) {
       paid: isPaid(result.status),
       status: result.status,
       amount: result.amount,
-      currency: result.currency,
-      message: result.message,
     });
   } catch (err) {
     const message =
