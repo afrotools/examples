@@ -17,7 +17,7 @@ import { formatGNF } from "@/lib/utils";
 import { Loader2, ShieldCheck } from "lucide-react";
 import type { CheckoutFormData } from "@/types";
 
-type PaymentProvider = "paycard" | "lengopay";
+type PaymentProvider = "paycard" | "lengopay" | "djomy";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -40,7 +40,11 @@ export default function CheckoutPage() {
     setError(null);
 
     const endpoint =
-      provider === "lengopay" ? "/api/checkout/lengopay" : "/api/checkout";
+      provider === "lengopay"
+        ? "/api/checkout/lengopay"
+        : provider === "djomy"
+          ? "/api/checkout/djomy"
+          : "/api/checkout";
 
     try {
       const res = await fetch(endpoint, {
@@ -68,6 +72,15 @@ export default function CheckoutPage() {
           payId: string;
         };
         sessionStorage.setItem("lengopay_pay_id", payId);
+        window.location.href = paymentUrl;
+      } else if (provider === "djomy") {
+        // Store transactionId before redirect — the result page uses it to
+        // call verify_payment server-side after returning from Djomy portal.
+        const { paymentUrl, transactionId } = data as {
+          paymentUrl: string;
+          transactionId: string;
+        };
+        sessionStorage.setItem("djomy_transaction_id", transactionId);
         window.location.href = paymentUrl;
       } else {
         window.location.href = (data as { paymentUrl: string }).paymentUrl;
@@ -134,6 +147,25 @@ export default function CheckoutPage() {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="phone">
+                  Téléphone{" "}
+                  <span className="text-xs text-muted-foreground font-normal">
+                    (requis pour Djomy)
+                  </span>
+                </Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={form.phone ?? ""}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, phone: e.target.value }))
+                  }
+                  placeholder="00224623000000"
+                  disabled={isLoading}
+                />
+              </div>
+
               {error && (
                 <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
                   {error}
@@ -176,6 +208,31 @@ export default function CheckoutPage() {
                     <>
                       <ShieldCheck className="h-4 w-4" />
                       Payer avec LengoPay
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full gap-2"
+                  disabled={
+                    isLoading ||
+                    !form.name.trim() ||
+                    !form.email.trim() ||
+                    !form.phone?.trim()
+                  }
+                  onClick={() => handlePayment("djomy")}
+                >
+                  {loading === "djomy" ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Redirection vers Djomy…
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="h-4 w-4" />
+                      Payer avec Djomy
                     </>
                   )}
                 </Button>

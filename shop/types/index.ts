@@ -27,6 +27,7 @@ export interface CartState {
 export interface CheckoutFormData {
   name: string;
   email: string;
+  phone?: string; // required for Djomy
 }
 
 export interface CreatePaymentRequest {
@@ -93,6 +94,49 @@ export interface LengoPayVerifyResponse {
 
 export interface LengoPayError {
   message: string;
+}
+
+// Djomy create_payment_gateway response data
+export interface DjomyCreateGatewayData {
+  transactionId: string;
+  status: string;
+  paidAmount: number;
+  paymentMethod: string;
+  merchantPaymentReference?: string;
+  redirectUrl: string;
+  paymentUrl?: string;
+  allowedPaymentMethods: string[];
+  createdAt: string;
+  metadata: Record<string, unknown>;
+}
+
+// Djomy verify_payment response data
+// status === "SUCCESS" is the ONLY safe condition to fulfill an order
+export interface DjomyVerifyData {
+  transactionId: string;
+  status: "CREATED" | "PENDING" | "FAILED" | "SUCCESS" | "REDIRECTED" | "CANCELLED" | "TIMEOUT" | "REFUNDED";
+  paidAmount: number;
+  receivedAmount: number; // amount after Djomy fees — use for accounting
+  fees: number;
+  paymentMethod: string;
+  payerIdentifier: string;
+  currency: string; // Djomy non-ISO strings: "GNF" | "FCFA" | "Dollar" | "Leones"
+  merchantPaymentReference: string;
+  createdAt: string;
+  providerReference: string;
+  allowedPaymentMethods: string[];
+  metadata: Record<string, unknown>;
+}
+
+// Djomy webhook payload — POSTed to your callback_url on each lifecycle event
+export interface DjomyWebhookPayload {
+  eventType: "payment.created" | "payment.pending" | "payment.success" | "payment.failed";
+  eventId: string;
+  message: string;
+  data: Record<string, unknown>;
+  paymentLinkReference?: string;
+  timestamp: string;
+  metadata?: Record<string, unknown>;
 }
 
 // Webhook payload — LengoPay POSTs this to callback_url

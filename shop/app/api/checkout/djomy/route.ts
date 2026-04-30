@@ -1,0 +1,80 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createPaymentGateway } from "@/lib/djomy";
+import { PRODUCTS } from "@/lib/products";
+import type { CreatePaymentRequest } from "@/types";
+
+export async function POST(request: NextRequest) {
+  try {
+    const body: CreatePaymentRequest = await request.json();
+    const { items, customer } = body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ error: "Panier vide." }, { status: 400 });
+    }
+    if (!customer?.name?.trim() || !customer?.email?.trim()) {
+      return NextResponse.json(
+        { error: "Informations client manquantes." },
+        { status: 400 }
+      );
+    }
+    if (!customer?.phone?.trim()) {
+      return NextResponse.json(
+        { error: "Numéro de téléphone requis pour Djomy." },
+        { status: 400 }
+      );
+    }
+
+    // Re-price server-side — never trust client prices
+    let totalAmount = 0;
+    const lineItems: string[] = [];
+
+    for (const item of items) {
+      const canonical = PRODUCTS.find((p) => p.id === item.product.id);
+      if (!canonical) {
+        return NextResponse.json(
+          { error: `Produit inconnu : ${item.product.id}` },
+          { status: 400 }
+        );
+      }
+      if (!Number.isInteger(item.quantity) || item.quantity < 1) {
+        return NextResponse.json(
+          { error: `Quantité invalide pour ${canonical.name}` },
+          { status: 400 }
+        );
+      }
+      totalAmount += canonical.price * item.quantity;
+      lineItems.push(`${canonical.name} ×${item.quantity}`);
+    }
+
+    const baseUrl =
+      process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+    const description = `${customer.name} — ${lineItems.join(", ")}`.slice(
+      0,
+      255
+    );
+
+    const payment = await createPaymentGateway({
+      amount: Math.round(totalAmount),
+      payerNumber: customer.phone.trim(),
+      description,
+      returnUrl: `${baseUrl}/payment/djomy`,
+      cancelUrl: `${baseUrl}/payment/failed`,
+      metadata: {
+        customer: customer.email,
+        items: lineItems.join(", ").slice(0, 255),
+      },
+    });
+
+    // In production: persist transactionId + order to DB before returning.
+    // transactionId is the only key for server-side verification later.
+
+    return NextResponse.json({
+      paymentUrl: payment.redirectUrl,
+      transactionId: payment.transactionId,
+    });
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Erreur interne du serveur.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
