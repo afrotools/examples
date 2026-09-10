@@ -111,11 +111,13 @@ export default async function ConfirmationPage({
             </div>
           </dl>
           <Separator />
-          <div className="flex items-center gap-2 rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
-            <Clock className="h-4 w-4 shrink-0" />
-            Le paiement en ligne sera disponible prochainement — cette
-            commande reste en attente jusque-là.
-          </div>
+          {payment.status === "pending" && (
+            <div className="flex items-center gap-2 rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
+              <Clock className="h-4 w-4 shrink-0" />
+              En attente de confirmation du paiement par Bictorys. Actualisez
+              cette page dans quelques instants pour voir le statut à jour.
+            </div>
+          )}
           <Button asChild className="w-full">
             <Link href="/">Retour à la boutique</Link>
           </Button>

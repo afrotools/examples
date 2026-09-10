@@ -57,3 +57,29 @@ export interface Payment {
   createdAt: string;
   updatedAt: string;
 }
+
+// Response from Bictorys create_charge when called without `payment_type` —
+// the hosted-checkout flow (HTTP 202). The customer is redirected to `link`.
+export interface BictorysCheckoutLink {
+  type: "CheckoutLinkObject";
+  link: string;
+  chargeId: string;
+  opToken: string;
+}
+
+export interface BictorysError {
+  status: string;
+  title: string;
+  details: string;
+}
+
+// Payload Bictorys POSTs to the webhook URL. Only the fields this project
+// actually consumes (idempotency, anti-fraud check, status mapping).
+export interface BictorysWebhookPayload {
+  id: string;
+  amount: number;
+  currency: string;
+  paymentReference?: string;
+  status: "succeeded" | "authorized" | "failed" | "cancelled" | "reversed";
+  timestamp: string;
+}

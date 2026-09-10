@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { formatXOF } from "@/lib/utils";
-import { Loader2, Clock } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import type { CheckoutFormData } from "@/types";
 
 export default function CheckoutPage() {
@@ -38,12 +38,12 @@ export default function CheckoutPage() {
   if (!hydrated || (hydrated && items.length === 0 && !orderCreatedRef.current))
     return null;
 
-  async function handleCreateOrder() {
+  async function handlePayWithBictorys() {
     setLoading(true);
     setError(null);
 
     try {
-      const res = await fetch("/api/orders", {
+      const res = await fetch("/api/checkout/bictorys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items, customer: form }),
@@ -54,15 +54,15 @@ export default function CheckoutPage() {
       if (!res.ok) {
         throw new Error(
           (data as { error?: string }).error ??
-            "Erreur lors de la création de la commande."
+            "Erreur lors de la création du paiement."
         );
       }
 
       orderCreatedRef.current = true;
       clearCart();
 
-      const { orderReference } = data as { orderReference: string };
-      router.push(`/checkout/confirmation?ref=${orderReference}`);
+      const { paymentUrl } = data as { paymentUrl: string };
+      window.location.href = paymentUrl;
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Une erreur est survenue."
@@ -153,22 +153,17 @@ export default function CheckoutPage() {
                   type="button"
                   className="w-full"
                   disabled={loading || !form.name.trim() || !form.email.trim()}
-                  onClick={handleCreateOrder}
+                  onClick={handlePayWithBictorys}
                 >
                   {loading ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Création de la commande…
+                      Redirection vers Bictorys…
                     </>
                   ) : (
-                    "Créer la commande"
+                    "Payer avec Bictorys"
                   )}
                 </Button>
-
-                <div className="flex items-center gap-2 rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
-                  <Clock className="h-4 w-4 shrink-0" />
-                  Le paiement en ligne sera disponible prochainement.
-                </div>
               </div>
             </form>
           </CardContent>
