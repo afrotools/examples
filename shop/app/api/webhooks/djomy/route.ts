@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { verifyPayment, isPaid } from "@/lib/djomy";
 import type { DjomyWebhookPayload } from "@/types";
@@ -20,7 +21,6 @@ async function computeHmacHex(message: string, secret: string): Promise<string> 
 export async function POST(request: NextRequest) {
   // Respond 200 IMMEDIATELY — Djomy considers non-200 a delivery failure.
   const rawBody = await request.text();
-  console.debug("[djomy/webhook] received raw body:", rawBody);
   const signature = request.headers.get("x-webhook-signature") ?? "";
 
   const clientSecret = process.env.DJOMY_CLIENT_SECRET;
@@ -44,12 +44,13 @@ async function processWebhook(
   signature: string,
   clientSecret: string
 ): Promise<void> {
-  // Verify HMAC-SHA256(rawBody, clientSecret) against X-Webhook-Signature header.
+  // X-Webhook-Signature is `v1:<hex>`, the hex being HMAC-SHA256(rawBody, clientSecret).
+  // Comparing the whole header to the hex rejected every real webhook.
   // Djomy webhooks carry no other auth — anyone knowing your URL can POST to it.
-  const expectedSignature = await computeHmacHex(rawBody, clientSecret);
-  console.debug("[djomy/webhook] computed signature:", expectedSignature);
-  console.debug("[djomy/webhook] received signature:", signature);
-  if (expectedSignature !== signature) {
+  const [version, received] = signature.split(":");
+  const expected = await computeHmacHex(rawBody, clientSecret);
+  if (version !== "v1" || !received || received.length !== expected.length ||
+      !timingSafeEqual(Buffer.from(received), Buffer.from(expected))) {
     console.error("[djomy/webhook] Invalid signature — request rejected");
     return;
   }
