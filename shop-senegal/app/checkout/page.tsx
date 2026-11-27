@@ -38,12 +38,12 @@ export default function CheckoutPage() {
   if (!hydrated || (hydrated && items.length === 0 && !orderCreatedRef.current))
     return null;
 
-  async function handlePayWithBictorys() {
+  async function handlePay(provider: "bictorys" | "saspay") {
     setLoading(true);
     setError(null);
 
     try {
-      const res = await fetch("/api/checkout/bictorys", {
+      const res = await fetch(`/api/checkout/${provider}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items, customer: form }),
@@ -153,7 +153,7 @@ export default function CheckoutPage() {
                   type="button"
                   className="w-full"
                   disabled={loading || !form.name.trim() || !form.email.trim()}
-                  onClick={handlePayWithBictorys}
+                  onClick={() => handlePay("bictorys")}
                 >
                   {loading ? (
                     <>
@@ -163,6 +163,15 @@ export default function CheckoutPage() {
                   ) : (
                     "Payer avec Bictorys"
                   )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled={loading || !form.name.trim() || !form.email.trim()}
+                  onClick={() => handlePay("saspay")}
+                >
+                  Payer avec SasPay
                 </Button>
               </div>
             </form>
